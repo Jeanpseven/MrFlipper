@@ -1,7 +1,29 @@
 import nfc
 import pickle
+import os
+import sys
+import ctypes
 
 FREQUENCIA_ARQUIVO = 'frequencias.pkl'
+
+# Verifica se a biblioteca nfcpy está instalada
+try:
+    import nfc
+except ImportError:
+    print("A biblioteca 'nfcpy' não está instalada. Instalando...")
+    os.system(f"{sys.executable} -m pip install nfcpy")
+    print("Biblioteca 'nfcpy' instalada com sucesso!")
+
+# Função para definir a cor de fundo
+def set_terminal_background_color(color):
+    if sys.platform.startswith("linux"):
+        os.system(f"tput setab {color}")
+    elif sys.platform.startswith("win"):
+        ctypes.windll.kernel32.SetConsoleScreenBufferAttribute(ctypes.windll.kernel32.GetStdHandle(-11), color)
+
+# Define a cor de fundo
+set_terminal_background_color(202)  # R:255, G:130, B:0
+
 
 def flipper_art():
    print("""                                                                     
@@ -34,6 +56,7 @@ def flipper_art():
                                      ---@@@+                          
                                 --+###@@@@*-                          
                                +@@@@@@@@@-                            """)
+
 
 
 def ler_tag():
