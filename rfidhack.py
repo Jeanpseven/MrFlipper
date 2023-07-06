@@ -106,6 +106,7 @@ def repetir_frequencia(frequencia):
 
 # Menu de escolhas
 while True:
+    flipper_art()
     print('--- Menu ---')
     print('1. Ler Tag RFID')
     print('2. Salvar Frequência')
