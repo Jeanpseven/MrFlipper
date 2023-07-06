@@ -1,9 +1,36 @@
-import os
+import mfrc522
 import pickle
-from rfidiot.protocol import ISO14443A
+import os
+import sys
+import ctypes
+
+FREQUENCIA_ARQUIVO = 'frequencias.pkl'
+
+# Verifica se a biblioteca nfcpy está instalada
+try:
+    import mfrc522
+except ImportError:
+    print("A biblioteca 'mfrc522' não está instalada. Instalando...")
+    os.system(f"{sys.executable} -m pip install mfrc522")
+    print("Biblioteca 'mfrc522' instalada com sucesso!")
+
+# Função para definir a cor de fundo
+def set_terminal_background_color(color):
+    if sys.platform.startswith("linux"):
+        os.system(f"tput setab {color}")
+    elif sys.platform.startswith("win"):
+        ctypes.windll.kernel32.SetConsoleScreenBufferAttribute(
+            ctypes.windll.kernel32.GetStdHandle(-11), color
+        )
+
+
+# Define a cor de fundo
+set_terminal_background_color(202)  # R:255, G:130, B:0
+
 
 def flipper_art():
-   print("""                                                                     
+    print(
+        """                                                                     
          =+++++++++++++++++                                        
    -+++**#*==============+#%%%#*++=                                   
 =+##%%%########%#%#+*+*%%#%=++-=++####==--                         
@@ -32,140 +59,87 @@ def flipper_art():
                                         ===****=====                  
                                      ---@@@+                          
                                 --+###@@@@*-                          
-                               +@@@@@@@@@-                            """)
+                              ```python
++@@@@@@@@@-                            """)
 
-# Verifica e instala as bibliotecas necessárias
-try:
-    import rfidiot
-except ImportError:
-    print("Biblioteca 'rfidiot' não encontrada. Instalando...")
-    os.system('pip install rfidiot')
 
-try:
-    import iso14443a
-except ImportError:
-    print("Biblioteca 'iso14443a' não encontrada. Instalando...")
-    os.system('pip install iso14443a')
+import pickle
+from mfrc522 import SimpleMFRC522
 
-from rfidiot.protocol import ISO14443A
+FREQUENCIA_ARQUIVO = 'frequencias.pkl'
 
-def clear_screen():
-    if os.name == 'posix':
-        _ = os.system('clear')
-    else:
-        _ = os.system('cls')
-
-def read_card():
-    clear_screen()
-    print("Aproxime o cartão RFID para leitura...")
-    
-    card_data = ISO14443A().read_card()
-    if card_data:
-        print("Cartão lido com sucesso:")
-        print(card_data)
-        
-        save_option = input("Deseja salvar esses dados? (S/N): ")
-        if save_option.upper() == "S":
-            save_wave(card_data)
-    else:
-        print("Nenhum cartão detectado.")
-
-def write_card():
-    clear_screen()
-    print("Aproxime o cartão RFID para escrita...")
-    
-    data = input("Digite os dados que deseja gravar no cartão: ")
-    if data:
-        ISO14443A().write_card(data)
-        print("Dados gravados no cartão com sucesso.")
-    else:
-        print("Nenhum dado fornecido.")
-
-def save_wave(data):
-    wave_name = input("Digite um nome para a onda: ")
-    if wave_name:
-        try:
-            waves = load_waves()
-            waves[wave_name] = data
-        except FileNotFoundError:
-            waves = {wave_name: data}
-        
-        with open("waves.pickle", "wb") as file:
-            pickle.dump(waves, file)
-        
-        print("Onda salva com sucesso.")
-    else:
-        print("Nome da onda não fornecido.")
-
-def load_waves():
+def ler_tag():
+    reader = SimpleMFRC522()
+    print('Aproxime o cartão RFID para leitura...')
     try:
-        with open("waves.pickle", "rb") as file:
-            waves = pickle.load(file)
-        return waves
+        id, text = reader.read()
+        print('Cartão lido com sucesso:')
+        print('ID:', id)
+        print('Dados:', text)
+        return id, text
+    except Exception as e:
+        print('Erro ao ler o cartão:', str(e))
+
+def salvar_frequencia(frequencia):
+    frequencias = carregar_frequencias()
+    frequencias.append(frequencia)
+    with open(FREQUENCIA_ARQUIVO, 'wb') as arquivo:
+        pickle.dump(frequencias, arquivo)
+    print('Frequência salva com sucesso!')
+
+def carregar_frequencias():
+    try:
+        with open(FREQUENCIA_ARQUIVO, 'rb') as arquivo:
+            frequencias = pickle.load(arquivo)
     except FileNotFoundError:
-        return {}
+        frequencias = []
+    return frequencias
 
-def list_waves():
-    waves = load_waves()
-    if waves:
-        clear_screen()
-        print("Lista de ondas salvas:")
-        for wave_name in waves:
-            print(wave_name)
-    else:
-        print("Nenhuma onda salva.")
+def repetir_frequencia(frequencia):
+    reader = SimpleMFRC522()
+    print('Aproxime o cartão RFID para repetir a frequência...')
+    try:
+        reader.write(frequencia)
+        print('Frequência RFID repetida com sucesso!')
+    except Exception as e:
+        print('Erro ao repetir a frequência:', str(e))
 
-def replay_wave():
-    waves = load_waves()
-    if waves:
-        clear_screen()
-        print("Lista de ondas salvas:")
-        for wave_name in waves:
-            print(wave_name)
-        
-        wave_name = input("Digite o nome da onda que deseja reproduzir: ")
-        if wave_name in waves:
-            clear_screen()
-            print("Reproduzindo a onda:", wave_name)
-            print(waves[wave_name])
+# Menu de escolhas
+while True:
+    print('--- Menu ---')
+    print('1. Ler Tag RFID')
+    print('2. Salvar Frequência')
+    print('3. Repetir Frequência')
+    print('0. Sair')
+    escolha = input('Digite a opção desejada: ')
+
+    if escolha == '1':
+        ler_tag()
+    elif escolha == '2':
+        id, text = ler_tag()
+        if id and text:
+            nome_onda = input('Digite um nome para a onda capturada: ')
+            frequencia = (nome_onda, {'id': id, 'dados': text})
+            salvar_frequencia(frequencia)
+    elif escolha == '3':
+        frequencias = carregar_frequencias()
+        if frequencias:
+            print('--- Frequências Salvas ---')
+            for i, (nome_onda, frequencia) in enumerate(frequencias):
+                print('{}. {} - {}'.format(i+1, nome_onda, frequencia['dados']))
+            indice = int(input('Digite o número da frequência que deseja repetir: '))
+            if indice >= 1 and indice <= len(frequencias):
+                nome_onda, frequencia = frequencias[indice-1]
+                repetir_frequencia(frequencia['dados'])
+            else:
+                print('Índice inválido! Tente novamente.')
         else:
-            print("Onda não encontrada.")
+            print('Nenhuma frequência salva. Por favor, salve uma frequência antes de repetir.')
+    elif escolha == '0':
+        print('Encerrando o programa...')
+        break
     else:
-        print("Nenhuma onda salva.")
-
-def exit_program():
-    clear_screen()
-    print("Encerrando o programa...")
-    exit()
-
-def main():
-    while True:
-        clear_screen()
-        flipper_art()
-        print("Menu:")
-        print("1. Ler cartão RFID")
-        print("2. Escrever em um cartão RFID")
-        print("3. Salvar onda RFID")
-        print("4. Listar ondas salvas")
-        print("5. Reproduzir onda RFID")
-        print("6. Sair")
-        
-        choice = input("Digite o número da opção desejada: ")
-        
-        if choice == "1":
-            read_card()
-        elif choice == "2":
-            write_card()
-        elif choice == "3":
-            save_wave()
-        elif choice ==```python
-            list_waves()
-        elif choice == "5":
-            replay_wave()
-        elif choice == "6":
-            exit_program()
-        else:
-            print("Opção inválida. Tente novamente.")
+        print('Opção inválida! Tente novamente.')
 
 if __name__ == "__main__":
     main()
