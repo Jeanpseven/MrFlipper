@@ -113,6 +113,10 @@ def apagar_dados():
         tag.ndef.records = []
         print('Dados da tag apagados com sucesso!')
 
+def calcular_uid(tag):
+    uid = tag.identifier.hex()
+    return uid
+
 def exibir_informacoes(tag):
     print('--- Informações da Tag ---')
     print('Identificador:', ler_id(tag))
@@ -148,7 +152,7 @@ def repetir_frequencia(frequencia):
         clf.connect(rdwr={'on-startup': lambda target: False, 'beep-on-connect': True}, terminate=lambda target: False, rdwr_timeout=10.0, target=[nfc.clf.RemoteTarget('212F', 'DEP'), nfc.clf.RemoteTarget('424F', 'DEP')])
         print('Frequência NFC repetida com sucesso!')
 
-# Menu de escolhas```python
+# Menu de escolhas
 while True:
     flipper_art()
     print('--- Menu ---')
@@ -158,6 +162,7 @@ while True:
     print('4. Apagar dados da Tag')
     print('5. Salvar frequência')
     print('6. Repetir frequência')
+    print('7. Calcular UID')
     print('0. Sair')
     escolha = input('Digite a opção desejada: ')
 
@@ -209,6 +214,12 @@ while True:
                 print('Índice inválido! Tente novamente.')
         else:
             print('Nenhuma frequência salva. Por favor, salve uma frequência antes de repetir.')
+    elif escolha == '7':
+        if 'tag' in locals():
+            uid = calcular_uid(tag)
+            print('UID da tag:', uid)
+        else:
+            print('Nenhuma tag lida. Por favor, leia uma tag antes de salvar a frequência.')
     elif escolha == '0':
         print('Encerrando o programa...')
         break
